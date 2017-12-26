@@ -54,8 +54,11 @@ run under Lambda. There are a couple of ways to do this:
    * Make sure that the `lambda_exec` IAM role has `read` permissions on these files.
    * Add the URIs to the files to your configuration under `db-files`
 1. You'll need to copy the `clamscan` binary in `/var/task/bin/clamscan` to the `bin` directory in this project
-1. You'll need to copy the `lib64` libraries in `/var/task/lib64` to the `lib64` directory in this project
+cp /var/task/bin/clamscan bin/
 
+1. You'll need to copy the `lib64` libraries in `/var/task/lib64` to the `lib64` directory in this project
+#copy all files from /var/task/lib64/ to the lib64 directory
+cp -r /var/task/lib64/* lib64/
 
 ### Set up your AWS Infrastructure
 1. S3 Bucket with files to scan
@@ -80,29 +83,112 @@ run under Lambda. There are a couple of ways to do this:
 brew install node
 npm install -g node-lambda
 
+#if your node is not installed, please install the node first
+curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.6/install.sh | bash
+. ~/.nvm/nvm.sh
+nvm install 6.11.5
+node -e "console.log('Running Node.js ' + process.version)"
 
 # Setup the package
 npm install # or `yarn install`
 
-
 # Provide your `slamscan` configuration by changing the `DEFINE-ME` values in default.yaml to the relevant ones for you
 cp config/test.yaml config/local.yaml
-emacs config/local.yaml # or `vim` or `nano` or whatever.
+vim config/local.yaml # or `vim` or `nano` or whatever.
+#sample---------
+
+sns-topic-arn: arn:aws:sns:us-east-1:ID:NAME
+
+db-files:
+  - s3://BucketName/clamav/bytecode.cvd
+  - s3://BucketName/clamav/daily.cvd
+  - s3://BucketName/clamav/main.cvd
+  - s3://BucketName/clamav/mirrors.dat
+
+clamscan:
+  testing_mode: true
+  
+#sample -----------
+
 
 
 # Initialize and provide some `node-lambda` configuration
 node-lambda setup
 
-emacs .env # or `vim` or `nano` or whatever.
+vim .env # or `vim` or `nano` or whatever.
 # You'll want to set the following, but experimentation is encouraged
 # AWS_MEMORY_SIZE=1024 # `clamscan` is pretty RAM hungry these days, per https://github.com/widdix/aws-s3-virusscan/issues/12
 # AWS_TIMEOUT=120 # `clamscan` takes a bit of time to spin up, plus downloading your virus definitions & files to scan might take a while
 # AWS_RUN_TIMEOUT=120
 # AWS_PROFILE=<your local `aws-cli` configured credentials in a profile>
 
+#sample ---------
+
+AWS_ENVIRONMENT=development
+AWS_ROLE_ARN=arn:aws:iam::ID:role/RoleName
+AWS_REGION=us-east-1
+AWS_FUNCTION_NAME=Lamdba-Func-Name
+AWS_HANDLER=index.handler
+AWS_MEMORY_SIZE=1024
+AWS_TIMEOUT=120
+AWS_DESCRIPTION=
+AWS_RUNTIME=nodejs6.10
+AWS_VPC_SUBNETS=
+AWS_VPC_SECURITY_GROUPS=
+AWS_TRACING_CONFIG=
+AWS_LOGS_RETENTION_IN_DAYS=
+EXCLUDE_GLOBS="event.json"
+PACKAGE_DIRECTORY=build
+
+#sample ---------
+
 cp test/resources/event.json ./event.json 
 # Might as well use the skeleton that's already there and just change the `DEFINE-ME`s
-emacs event.json # or `vim` or `nano` or whatever.
+vim event.json # or `vim` or `nano` or whatever.
+
+#sample -------
+{
+    "Records": [
+        {
+            "eventVersion": "2.0",
+            "eventTime": "1970-01-01T00:00:00.000Z",
+            "requestParameters": {
+                "sourceIPAddress": "127.0.0.1"
+            },
+            "s3": {
+                "configurationId": "testConfigRule",
+                "object": {
+                    "eTag": "69630e4574ec6798239b091cda43dca0",
+                    "sequencer": "0A1B2C3D4E5F678901",
+                    "key": "TestFileKey",
+                    "size": 69
+                },
+                "bucket": {
+                    "arn": "Bucket ARN",
+                    "name": "Bucket Name",
+                    "ownerIdentity": {
+                        "principalId": "S3 Owner ID"
+                    }
+                },
+                "s3SchemaVersion": "1.0"
+            },
+            "responseElements": {
+                "x-amz-id-2": "EXAMPLE123/5678abcdefghijklambdaisawesome/mnopqrstuvwxyzABCDEFGH",
+                "x-amz-request-id": "EXAMPLE123456789"
+            },
+            "awsRegion": "us-east-1",
+            "eventName": "ObjectCreated:Put",
+            "userIdentity": {
+                "principalId": "EXAMPLE"
+            },
+            "eventSource": "aws:s3"
+        }
+    ]
+}
+
+
+#sample -------
+
 
 
 # Run your lambda locally
