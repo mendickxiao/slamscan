@@ -142,7 +142,6 @@ PACKAGE_DIRECTORY=build
 
 #sample ---------
 
-cp test/resources/event.json ./event.json 
 # Might as well use the skeleton that's already there and just change the `DEFINE-ME`s
 vim event.json # or `vim` or `nano` or whatever.
 
